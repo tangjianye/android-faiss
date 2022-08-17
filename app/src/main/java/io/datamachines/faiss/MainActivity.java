@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     data = stringFromJNI(currentValue);
+                    data = search();
                     Log.e("tjy", "currentValue = " + currentValue + " ;data = " + data);
                     runOnUiThread(new Runnable() {
                         @Override
@@ -128,4 +129,5 @@ public class MainActivity extends AppCompatActivity {
 
     public static native String stringFromJNI(int a);
 
+    public static native String search();
 }

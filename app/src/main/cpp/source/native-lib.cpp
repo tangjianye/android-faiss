@@ -7,9 +7,11 @@
 
 #include <sys/time.h>
 
+#include "faiss/utils.h"
 #include "faiss/IndexIVFPQ.h"
 #include "faiss/IndexFlat.h"
 #include "faiss/index_io.h"
+#include "faiss/IndexIVFFlat.h"
 
 #include "log.h"
 
@@ -143,6 +145,87 @@ JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
 
 
+}
+
+// add by tjy
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_datamachines_faiss_MainActivity_search(JNIEnv *env, jclass clazz) {
+
+    int d = 64;                            // dimension
+    int nb = 100000;                       // database size
+    int nq = 10000;                        // nb of queries
+
+    float *xb = new float[d * nb];
+    float *xq = new float[d * nq];
+
+    for(int i = 0; i < nb; i++) {
+        for(int j = 0; j < d; j++)
+            xb[d * i + j] = drand48();
+        xb[d * i] += i / 1000.;
+    }
+
+    for(int i = 0; i < nq; i++) {
+        for(int j = 0; j < d; j++)
+            xq[d * i + j] = drand48();
+        xq[d * i] += i / 1000.;
+    }
+
+
+    int nlist = 100;
+    int k = 4;
+
+    faiss::IndexFlatL2 quantizer(d);       // the other index
+    faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
+    // here we specify METRIC_L2, by default it performs inner-product search
+    double t0 = faiss::getmillisecs();
+    index.verbose = 1;
+    assert(!index.is_trained);
+    index.train(nb, xb);
+    double t1 = faiss::getmillisecs();
+    LOGI("train time:%.3f \n", (t1-t0)/1000.0);
+
+    assert(index.is_trained);
+    index.add(nb, xb);                    // 对底库根据聚类的中心点分桶装
+    double t2 = faiss::getmillisecs();
+    LOGI("add time:%.3f \n", (t2-t1)/1000.0);
+
+    {       // search xq
+        long *I = new long[k * nq];
+        float *D = new float[k * nq];
+
+        index.search(nq, xq, k, D, I);
+        double t3 = faiss::getmillisecs();
+        LOGI("search1 time:%.3f \n", (t3-t2)/1000.0);
+
+        LOGI("I=\n");
+        for(int i = nq - 5; i < nq; i++) {
+            for(int j = 0; j < k; j++)
+                LOGI("%5ld ", I[i * k + j]);
+            LOGI("\n");
+        }
+
+        index.nprobe = 10;
+        index.search(nq, xq, k, D, I);
+        double t4 = faiss::getmillisecs();
+        LOGI("search2 time:%.3f \n", (t4-t3)/1000.0);
+
+        LOGI("I=\n");
+        for(int i = nq - 5; i < nq; i++) {
+            for(int j = 0; j < k; j++)
+                LOGI("%5ld ", I[i * k + j]);
+            LOGI("\n");
+        }
+
+        delete [] I;
+        delete [] D;
+    }
+
+
+
+    delete [] xb;
+    delete [] xq;
+
+    return env->NewStringUTF("faiss");
 }
 
 
