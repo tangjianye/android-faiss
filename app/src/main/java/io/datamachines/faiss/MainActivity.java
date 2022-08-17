@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     data = stringFromJNI(currentValue);
+                    Log.e("tjy", "currentValue = " + currentValue + " ;data = " + data);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -63,18 +64,7 @@ public class MainActivity extends AppCompatActivity {
         tv = findViewById(R.id.sample_text);
         tv.setText("Testing for now - Build time");
 
-
         StartTest = findViewById(R.id.button);
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-//                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 10);
-//            } else {
-//                handlePreViewCallBack();
-//            }
-//        } else {
-//            handlePreViewCallBack();
-//        }
 
         //========================================
         //      动态获取权限
